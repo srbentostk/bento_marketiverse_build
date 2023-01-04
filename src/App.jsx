@@ -86,6 +86,21 @@ const memberList = useMemo(() => {
   // ... include all your other code that was already there below.
   // This is the case where the user hasn't connected their wallet
   // to your web app. Let them call connectWallet.
+  useEffect(() => {
+    if (!nftBalance || !nftBalance.gt(0)) {
+      return;
+    }
+  
+    const getTokenUri = async () => {
+      try {
+        const tokenUri = await editionDrop?.getTokenUri(0);
+        console.log('🖼️ Token URI', tokenUri);
+      } catch (error) {
+        console.error('failed to get token URI', error);
+      }
+    };
+    getTokenUri();
+  }, [nftBalance, editionDrop]);
   if (!address) {
     return (
       <div className="landing">
