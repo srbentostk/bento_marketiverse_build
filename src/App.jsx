@@ -3,22 +3,57 @@ import { useAddress, ConnectWallet, useContract, useNFTBalance } from '@thirdweb
 import { useState, useEffect, useMemo } from 'react';
 import { Web3Button } from "@thirdweb-dev/react";
 
+
 const App = () => {
+  //Just to storage img and name
+  const [contract, setContract] = useState();
+  const [nftName, setNftName] = useState();
+  const [nftImage, setNftImage] = useState();
+  
+  
+  const DisplayNFT = ({name, image}) => {
+  return (
+    <div style={{ display: "flex", alignItems: "center", flexDirection: "column" }} /* className="nft-display" */>
+      <img src={image} style={{
+          maxHeight: "400px",
+          borderRadius: "4px",
+          marginRight: "10px",
+        }} alt={name} />
+      <p style={{fontFamily: "Roboto"}}>{name}</p> 
+      
+    </div>
+  );
+  };
   // Use the hooks thirdweb give us.
   const address = useAddress();
   console.log("👋 Address:", address);
   // Initialize our Edition Drop contract
-  const editionDropAddress = "0xA3b58d7D0c3641dcAB058DDb7fed83e528D47b68"
+  const editionDropAddress = "0xA3b58d7D0c3641dcAB058DDb7fed83e528D47b68";
+  const nftCollectionAddress = "0xba3d14D5C6cC60e99Da06E908841aFe0998C65bE";
+  const erc721Address = "0xba3d14D5C6cC60e99Da06E908841aFe0998C65bE";
+  const editionDropAddressMember ="0x901D66E338eb411B3CA3aB4398D7491f9ed79735";
   // Initialize our token contract
-const { contract: token } = useContract('0xA3b58d7D0c3641dcAB058DDb7fed83e528D47b68', 'token');
+  const {contract: editionDropMember} = useContract(editionDropAddressMember, "edition-drop");
+  const { contract: token } = useContract('0xA3b58d7D0c3641dcAB058DDb7fed83e528D47b68', 'token');
   const { contract: editionDrop } = useContract(editionDropAddress, "edition-drop");
+  const { contract: nftCollection } = useContract(nftCollectionAddress, "nft-collection");
   // Hook to check if the user has our NFT
   const { data: nftBalance } = useNFTBalance(editionDrop, address, "0")
-
+  // Hook to check if the user has member NFT
+  const { data: nftCollectionNFT} = useNFTBalance(nftCollection, address, "0");
+  const {data: nftEditionDropMember} = useNFTBalance(editionDropMember, address, "0");
+  //Check if the user has Investor NFT
   const hasClaimedNFT = useMemo(() => {
-    
     return nftBalance && nftBalance.gt(0)
-  }, [nftBalance])
+  }, [nftBalance]);
+  //Check if the user has Member NFT
+  const hasEditionDropMember = useMemo(()=>{
+    return nftEditionDropMember && nftEditionDropMember.gt(0);
+  }, [nftEditionDropMember]);
+  //Check if the user has any NFT at all
+  const hasAnyNFT = useMemo(()=>{
+    return hasClaimedNFT || hasEditionDropMember;
+  }, [hasClaimedNFT, hasEditionDropMember]);
 // Holds the amount of token each member has in state.
 const [memberTokenAmounts, setMemberTokenAmounts] = useState([]);
 // The array holding all of our members addresses.
@@ -43,6 +78,11 @@ useEffect(() => {
         0,
       );
       setMemberAddresses(memberAddresses);
+      // loop through all addresses and get the balance
+      memberAddresses.forEach(async (memberAddress) => {
+        const balance = await token.balanceOf(memberAddress);
+        setMemberTokenAmounts((prevAmounts) => [...prevAmounts, balance]);
+      });
       console.log('🚀 Members addresses', memberAddresses);
     } catch (error) {
       console.error('failed to get member list', error);
@@ -50,6 +90,34 @@ useEffect(() => {
   };
   getAllAddresses();
 }, [hasClaimedNFT, editionDrop?.history]);
+// New function to display NFTs
+const displayNFTs = async () => {
+  /* try {
+      // get all addresses that have NFTs
+      const nftAddresses = await editionDrop.history.getAllClaimerAddresses(0);
+      nftAddresses.forEach(async (nftAddress) => {
+          // get metadata for each NFT
+          const nftMetadata = await nftCollection.get(nftAddress);
+          console.log(nftMetadata);
+          // use the metadata to display the NFT name and image on the screen
+      });
+  } catch (error) {
+      console.error(error);
+  } */
+  setContract(editionDrop);
+  for (let i = 0; i < memberAddresses.length; i++) {
+    // get the specific NFT by tokenId
+    const nft = await contract.get("0");
+    // get the metadata of the NFT
+    const metadata = nft.metadata;
+    // extract the image and name from the metadata
+    const image = metadata.image;
+    const name = metadata.name;
+    // set the state for the image and name
+    setNftImage(image);
+    setNftName(name);
+  }
+};
 
 // This useEffect grabs the # of token each member holds.
 useEffect(() => {
@@ -111,12 +179,19 @@ const memberList = useMemo(() => {
       </div>
     );
   }
-  if (hasClaimedNFT) {
+  if (hasAnyNFT) {
     return (
       <div className="member-page">
+          <button onClick={displayNFTs}>
+            Display NFTs
+          </button>
+          {nftName && nftImage ? (
+                <DisplayNFT name={nftName} image={nftImage} />
+              ) : (
+                <p>No NFTs to display</p>
+              )}
         <h1> Member Page</h1>
         <p>Congratulations on being a member, see our Whitepaper:</p>
-        
 <h1>Introduction</h1>
 <p>The semi-secret society is a platform based on blockchain technology that is focused on digital marketing. It offers a range of membership categories, including Founders, Investors, Producer Partners, Honorary Members, VIP Members, Black Members, Advanced Members, Intermediate Members, Beginner Members, Students, and Determined Students. It also has categories for audience members, including Audience, Fan Audience, and Determined Audience.</p>
 <h2>Membership Categories</h2>
@@ -207,7 +282,7 @@ const memberList = useMemo(() => {
 <p>Through the use of smart contracts, the platform aims to provide a secure and transparent system for the creation and exchange of user-generated content, ensuring that creators are fairly compensated for their work and payers receive high-quality content for their campaigns.</p>
 
 <div>
-        <div>
+        <div>git
           <h2>Member List</h2>
           <table className="card">
             <thead>
@@ -230,34 +305,57 @@ const memberList = useMemo(() => {
         </div>
       </div>
       </div>
+
     );
   };
   // This is the case where we have the user's address
   // which means they've connected their wallet to our site!
+  const id = 0;
   return (
-    <div className="mint-nft">
-      <h1>Mint your free (for now) Membership NFT</h1>
+    <><div className="mint-nft">
+      <h1>Mint your free (for now) Investor Membership NFT</h1>
       <p>Join a semi-secret society of digital marketing. There are several ways to join, decide which is best for you:</p>
-<p><strong>Investor Partner</strong>: For those who want to invest money in the business and receive dividends, which are essentially quarterly profit shares of the company.</p>
-<p><strong>Content Creator</strong>: Ideal for those with specific knowledge in the field of Digital Marketing, with the Content Creator NFT you can publish courses, ebooks, and events on the platform. Here you contribute by sharing knowledge and in return receive money, recognition, and unparalleled networking. Throughout your journey on the platform, you can receive NFTs that highlight you according to your achievements.</p>
-<p><strong>Regular Member</strong>: Made for those who want to be part of the basic information and benefits of this society. A cheap and simple way to become a member of the semi-secret society.</p>
+      <p><strong>Investor Partner</strong>: For those who want to invest money in the business and receive dividends, which are essentially quarterly profit shares of the company.</p>
+      <p><strong>Content Creator</strong>: Ideal for those with specific knowledge in the field of Digital Marketing, with the Content Creator NFT you can publish courses, ebooks, and events on the platform. Here you contribute by sharing knowledge and in return receive money, recognition, and unparalleled networking. Throughout your journey on the platform, you can receive NFTs that highlight you according to your achievements.</p>
+      <p><strong>Regular Member</strong>: Made for those who want to be part of the basic information and benefits of this society. A cheap and simple way to become a member of the semi-secret society.</p>
       <div className="btn-hero">
-        <Web3Button 
+        <Web3Button
           contractAddress={editionDropAddress}
           action={contract => {
-            contract.erc1155.claim(0, 1)
-          }}
+            contract.erc1155.claim(0, 1);
+          } }
           onSuccess={() => {
             console.log(`🌊 Successfully Minted! Check it out on OpenSea: https://testnets.opensea.io/assets/${editionDrop.getAddress()}/0`);
-          }}
+          } }
           onError={error => {
             console.error("Failed to mint NFT", error);
-          }}
+          } }
         >
           Mint your NFT (FREE)
         </Web3Button>
       </div>
     </div>
+    <div className="mint-nft">
+        <h1>Mint your free (for now) Member Membership NFT</h1>
+        <p>Join a semi-secret society of digital marketing. There are several ways to join, decide which is best for you:</p>
+        <div className="btn-hero">
+        <Web3Button
+          contractAddress={editionDropAddressMember}
+          action={contract => {
+            contract.erc1155.claim(0, 1);
+          } }
+          onSuccess={() => {
+            console.log(`🌊 Successfully Minted! Check it out on OpenSea: https://testnets.opensea.io/assets/${editionDropMember.getAddress()}/0`);
+          } }
+          onError={error => {
+            console.error("Failed to mint NFT", error);
+          } }
+        >
+          Mint your NFT (FREE)
+        </Web3Button>
+        </div>
+      </div></>
+    
   );
 }
 
