@@ -92,19 +92,8 @@ useEffect(() => {
 }, [hasClaimedNFT, editionDrop?.history]);
 // New function to display NFTs
 const displayNFTs = async () => {
-  /* try {
-      // get all addresses that have NFTs
-      const nftAddresses = await editionDrop.history.getAllClaimerAddresses(0);
-      nftAddresses.forEach(async (nftAddress) => {
-          // get metadata for each NFT
-          const nftMetadata = await nftCollection.get(nftAddress);
-          console.log(nftMetadata);
-          // use the metadata to display the NFT name and image on the screen
-      });
-  } catch (error) {
-      console.error(error);
-  } */
-  setContract(editionDrop);
+ 
+  /* setContract(editionDrop);
   for (let i = 0; i < memberAddresses.length; i++) {
     // get the specific NFT by tokenId
     const nft = await contract.get("0");
@@ -116,6 +105,25 @@ const displayNFTs = async () => {
     // set the state for the image and name
     setNftImage(image);
     setNftName(name);
+  } */
+  //let nft;
+  if(hasClaimedNFT) {
+    setContract(editionDrop);
+    const nft = await contract.get("0");
+    const metadata_editionDrop = nft.metadata;
+    const image_editionDrop = metadata_editionDrop.image;
+    const name_editionDrop = metadata_editionDrop.name;
+    setNftName(name_editionDrop);
+    setNftImage(image_editionDrop);
+  }
+  else {
+    setContract(nftCollection);
+    const nft = await contract.get("0");
+    const metadata_nftCollection = nft.metadata;
+    const image_nftCollection = metadata_nftCollection.image;
+    const name_nftCollection = metadata_nftCollection.name;
+    setNftName(name_nftCollection);
+    setNftImage(image_nftCollection);
   }
 };
 
@@ -189,7 +197,7 @@ const memberList = useMemo(() => {
                 <DisplayNFT name={nftName} image={nftImage} />
               ) : (
                 <p>No NFTs to display</p>
-              )}
+          )}
         <h1> Member Page</h1>
         <p>Congratulations on being a member, see our Whitepaper:</p>
 <h1>Introduction</h1>
