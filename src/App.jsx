@@ -9,18 +9,25 @@ const App = () => {
   const [contract, setContract] = useState();
   const [nftName, setNftName] = useState();
   const [nftImage, setNftImage] = useState();
+  const [contract_Member, setConctract_Member] = useState();
+  const [nftName_Member, setNftName_Member] = useState();
+  const [nftImage_Member, setNftImage_Member] = useState();
   
-  
-  const DisplayNFT = ({name, image}) => {
+  const DisplayNFT = ({name, image, name_member, image_member}) => {
   return (
     <div style={{ display: "flex", alignItems: "center", flexDirection: "column" }} /* className="nft-display" */>
+      <img src={image_member} style={{
+          maxHeight: "400px",
+          borderRadius: "4px",
+          marginRight: "10px",
+        }} alt={name_member} />
+      <p /* style={{fontFamily: "Roboto"}} */>{name_member}</p> 
       <img src={image} style={{
           maxHeight: "400px",
           borderRadius: "4px",
           marginRight: "10px",
-        }} alt={name} />
-      <p style={{fontFamily: "Roboto"}}>{name}</p> 
-      
+        }} alt={name}/>
+      <p>{name}</p>
     </div>
   );
   };
@@ -32,6 +39,7 @@ const App = () => {
   const nftCollectionAddress = "0xba3d14D5C6cC60e99Da06E908841aFe0998C65bE";
   const erc721Address = "0xba3d14D5C6cC60e99Da06E908841aFe0998C65bE";
   const editionDropAddressMember ="0x901D66E338eb411B3CA3aB4398D7491f9ed79735";
+  /* const editionDropAddressMember ="0xba3d14D5C6cC60e99Da06E908841aFe0998C65bE"; */
   // Initialize our token contract
   const {contract: editionDropMember} = useContract(editionDropAddressMember, "edition-drop");
   const { contract: token } = useContract('0xA3b58d7D0c3641dcAB058DDb7fed83e528D47b68', 'token');
@@ -92,40 +100,46 @@ useEffect(() => {
 }, [hasClaimedNFT, editionDrop?.history]);
 // New function to display NFTs
 const displayNFTs = async () => {
- 
-  /* setContract(editionDrop);
-  for (let i = 0; i < memberAddresses.length; i++) {
-    // get the specific NFT by tokenId
-    const nft = await contract.get("0");
-    // get the metadata of the NFT
-    const metadata = nft.metadata;
-    // extract the image and name from the metadata
-    const image = metadata.image;
-    const name = metadata.name;
-    // set the state for the image and name
-    setNftImage(image);
-    setNftName(name);
-  } */
-  //let nft;
-  if(hasClaimedNFT) {
-    setContract(editionDrop);
-    const nft = await contract.get("0");
-    const metadata_editionDrop = nft.metadata;
-    const image_editionDrop = metadata_editionDrop.image;
-    const name_editionDrop = metadata_editionDrop.name;
-    setNftName(name_editionDrop);
-    setNftImage(image_editionDrop);
-  }
-  else {
-    setContract(nftCollection);
-    const nft = await contract.get("0");
-    const metadata_nftCollection = nft.metadata;
-    const image_nftCollection = metadata_nftCollection.image;
-    const name_nftCollection = metadata_nftCollection.name;
-    setNftName(name_nftCollection);
-    setNftImage(image_nftCollection);
+  try {
+    // Get the NFTs owned by the user
+    const nfts_member = await editionDropMember.getOwned(address);
+    const nfts = await editionDrop.getOwned(address);
+    console.log("NFTs encontrados para o endereço: ", address);
+    console.log("NFTs do contrato editionDrop: ", nfts);
+    console.log("NFTs do contrato editionDropMember: ", nfts_member);
+    // Get the metadata for each NFT
+    for (let i = 0; i < nfts.length; i++) {
+      const tokenId = nfts[i];
+      const nft = await editionDrop.get(tokenId);
+      const nftmeta = await editionDrop.get("0");
+      const metadata_editionDrop = nftmeta.metadata;
+      console.log("Metadata editionDrop antes de image and name: ", metadata_editionDrop);
+      const image_editionDrop = metadata_editionDrop.image;
+      const name_editionDrop = metadata_editionDrop.name;
+      setNftName(name_editionDrop);
+      setNftImage(image_editionDrop);
+      console.log("Informações de NFT adquiridas para editionDrop: ", nft);
+      console.log("Metadata editionDrop: ", metadata_editionDrop);
+    }
+    for (let i = 0; i < nfts_member.length; i++) {
+      const tokenId_member = nfts_member[i];
+      const nft_member = await editionDropMember.get(tokenId_member);
+      const nft_membermeta = await editionDropMember.get("0");
+      console.log("nft_member: ", nft_member);
+      const metadata_editionDropMember = nft_membermeta.metadata;
+      console.log("metadata_editionDropMember: ", metadata_editionDropMember);
+      const image_editionDropMember = metadata_editionDropMember.image;
+      const name_editionDropMember = metadata_editionDropMember.name;
+      setNftName_Member(name_editionDropMember);
+      setNftImage_Member(image_editionDropMember);
+      console.log("Informações de NFT adquiridas para editionDropMember: ", nft_member);
+      console.log("Metadata editionDropMember: ", metadata_editionDropMember);
+    }
+  } catch (err) {
+    console.error("Erro ao buscar NFTs do usuário: ", err);
   }
 };
+
 
 // This useEffect grabs the # of token each member holds.
 useEffect(() => {
@@ -197,6 +211,11 @@ const memberList = useMemo(() => {
                 <DisplayNFT name={nftName} image={nftImage} />
               ) : (
                 <p>No NFTs to display</p>
+          )}
+          {nftName_Member && nftImage_Member ? (
+            <DisplayNFT name={nftName_Member} image={nftImage_Member} />
+          ):(
+            <p>No Member NFTs to display</p>
           )}
         <h1> Member Page</h1>
         <p>Congratulations on being a member, see our Whitepaper:</p>
